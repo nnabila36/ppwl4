@@ -77,6 +77,38 @@ const app = new Elysia()
       })
     }
   )
+  
+  // ==============================
+  // PRAKTIKUM 5 - beforeHandle
+  // ==============================
+  .get(
+    "/admin",
+    () => {
+      return {
+      stats: 99
+    };
+  },
+  {
+    beforeHandle({ headers, set }) {
+      if (headers.authorization !== "Bearer 123") {
+        set.status = 401;
+        return {
+          success: false,
+          message: "Unauthorized"
+        };
+      }
+    },
+    response: {
+      200: t.Object({
+        stats: t.Number()
+      }),
+      401: t.Object({
+        success: t.Boolean(),
+        message: t.String()
+      })
+    }
+  }
+)
 
   .listen(3000);
 
