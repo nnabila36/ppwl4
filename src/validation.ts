@@ -4,9 +4,22 @@ import { openapi } from "@elysiajs/openapi";
 const app = new Elysia()
   .use(openapi())
 
-  // ==============================
-  // PRAKTIKUM 1 - VALIDASI BODY
-  // ==============================
+  .onAfterHandle(({ response }) => {
+    if (
+      typeof response === "object" &&
+      response !== null &&
+      "id" in response &&
+      "name" in response
+    ) {
+      return {
+        success: true,
+        message: "data tersedia",
+        data: response
+      };
+    }
+    return response; // penting supaya tidak undefined
+  })
+
   .post(
     "/request",
     ({ body }) => ({
@@ -30,21 +43,16 @@ const app = new Elysia()
     }
   )
 
-  // ==============================
-  // PRAKTIKUM 2 - PARAMS & QUERY
-  // ==============================
   .get(
     "/products/:id",
-    ({ params, query }) => {
-      return {
-        success: true,
-        productId: Number(params.id),
-        sort: query.sort ?? "asc"
-      };
-    },
+    ({ params, query }) => ({
+      success: true,
+      productId: Number(params.id),
+      sort: query.sort ?? "asc"
+    }),
     {
       params: t.Object({
-        id: t.Numeric()
+        id: t.Number() // ganti dari t.Numeric()
       }),
       query: t.Object({
         sort: t.Optional(
@@ -59,17 +67,12 @@ const app = new Elysia()
     }
   )
 
-  // ==============================
-  // PRAKTIKUM 3 - VALIDASI RESPONSE
-  // ==============================
   .get(
     "/stats",
-    () => {
-      return {
-        total: 100,
-        active: 80
-      };
-    },
+    () => ({
+      total: 100,
+      active: 80
+    }),
     {
       response: t.Object({
         total: t.Number(),
@@ -77,38 +80,55 @@ const app = new Elysia()
       })
     }
   )
-  
-  // ==============================
-  // PRAKTIKUM 5 - beforeHandle
-  // ==============================
+
   .get(
     "/admin",
-    () => {
-      return {
+    () => ({
       stats: 99
-    };
-  },
-  {
-    beforeHandle({ headers, set }) {
-      if (headers.authorization !== "Bearer 123") {
-        set.status = 401;
-        return {
-          success: false,
-          message: "Unauthorized"
-        };
+    }),
+    {
+      beforeHandle({ headers, set }) {
+        if (headers.authorization !== "Bearer 123") {
+          set.status = 401;
+          return {
+            success: false,
+            message: "Unauthorized"
+          };
+        }
+      },
+      response: {
+        200: t.Object({
+          stats: t.Number()
+        }),
+        401: t.Object({
+          success: t.Boolean(),
+          message: t.String()
+        })
       }
-    },
-    response: {
-      200: t.Object({
-        stats: t.Number()
-      }),
-      401: t.Object({
+    }
+  )
+
+  .get(
+    "/product",
+    () => ({
+      success: true,
+      message: "OK",
+      data: {
+        id: 1,
+        name: "Laptop"
+      }
+    }),
+    {
+      response: t.Object({
         success: t.Boolean(),
-        message: t.String()
+        message: t.String(),
+        data: t.Object({
+          id: t.Number(),
+          name: t.String()
+        })
       })
     }
-  }
-)
+  )
 
   .listen(3000);
 
