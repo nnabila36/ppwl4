@@ -4,6 +4,7 @@ import { openapi } from "@elysiajs/openapi";
 const app = new Elysia()
   .use(openapi())
 
+  // afterHandle untuk praktikum 6
   .onAfterHandle(({ response }) => {
     if (
       typeof response === "object" &&
@@ -17,7 +18,7 @@ const app = new Elysia()
         data: response
       };
     }
-    return response; // penting supaya tidak undefined
+    return response;
   })
 
   .post(
@@ -52,7 +53,7 @@ const app = new Elysia()
     }),
     {
       params: t.Object({
-        id: t.Number() // ganti dari t.Numeric()
+        id: t.Number()
       }),
       query: t.Object({
         sort: t.Optional(
@@ -129,6 +130,55 @@ const app = new Elysia()
       })
     }
   )
+
+  // Praktikum 7: Endpoint login dengan validasi
+  .post(
+    "/login",
+    ({ body }) => ({
+      success: true,
+      message: "Login berhasil",
+      data: body
+    }),
+    {
+      body: t.Object({
+        email: t.String({ format: "email" }),
+        password: t.String({ minLength: 8 })
+      }),
+      response: t.Object({
+        success: t.Boolean(),
+        message: t.String(),
+        data: t.Object({
+          email: t.String(),
+          password: t.String()
+        })
+      })
+    }
+  )
+
+  // Hook onError untuk menangani error
+  .onError(({ code, error, set }) => {
+    if (code === "VALIDATION") {
+      set.status = 400;
+      return {
+        success: false,
+        error: "Validation Error"
+      };
+    }
+
+    if (code === "NOT_FOUND") {
+      set.status = 404;
+      return {
+        success: false,
+        error: "Route not found"
+      };
+    }
+
+    set.status = 500;
+    return {
+      success: false,
+      error: "Internal Server Error"
+    };
+  })
 
   .listen(3000);
 
